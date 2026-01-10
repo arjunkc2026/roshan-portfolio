@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     initFormSubmission();
     initSmoothScroll();
     initMetricCounters();
+    
+    // Mobile optimizations
+    initMobileOptimizations();
+    initViewportFix();
 });
 
 // ===================================
@@ -136,16 +140,40 @@ function initNavigation() {
     });
     
     // Mobile menu toggle
-    hamburger.addEventListener('click', () => {
-        hamburger.classList.toggle('active');
-        navMenu.classList.toggle('active');
-    });
+    if (hamburger && navMenu) {
+        hamburger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            hamburger.classList.toggle('active');
+            navMenu.classList.toggle('active');
+            
+            // Prevent body scroll when menu is open
+            if (navMenu.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (navMenu.classList.contains('active') && 
+                !navMenu.contains(e.target) && 
+                !hamburger.contains(e.target)) {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+    }
     
     // Close menu when clicking on nav links
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
-            hamburger.classList.remove('active');
-            navMenu.classList.remove('active');
+            if (hamburger && navMenu) {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+                document.body.style.overflow = '';
+            }
         });
     });
     
@@ -677,6 +705,56 @@ function initThemeToggle() {
         
         document.documentElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
+    });
+}
+
+// ===================================
+// Mobile Optimizations
+// ===================================
+function initMobileOptimizations() {
+    const isMobile = window.innerWidth <= 768;
+    
+    if (isMobile) {
+        // Hide custom cursor on mobile
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        if (cursor) cursor.style.display = 'none';
+        if (cursorFollower) cursorFollower.style.display = 'none';
+        
+        // Reduce particle opacity for better performance
+        const canvas = document.getElementById('particleCanvas');
+        if (canvas) canvas.style.opacity = '0.3';
+        
+        // Add mobile class to body
+        document.body.classList.add('mobile-device');
+    }
+    
+    // Prevent double-tap zoom on iOS
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', (e) => {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, { passive: false });
+}
+
+// ===================================
+// Viewport Height Fix for Mobile Browsers
+// ===================================
+function initViewportFix() {
+    function setViewportHeight() {
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    
+    setViewportHeight();
+    
+    // Update on resize and orientation change
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', () => {
+        setTimeout(setViewportHeight, 100);
     });
 }
 
